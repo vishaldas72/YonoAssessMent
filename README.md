@@ -6,7 +6,19 @@ A local-first **AI Agent Orchestration Platform** built for the Yuno AI Engineer
 
 ---
 
+## 📹 Demo
+
+Two-minute end-to-end walkthrough — agents, workflow execution, live monitoring, and a Telegram conversation.
+
+[![Watch the demo](https://img.youtube.com/vi/XTGzrL2DKx4/maxresdefault.jpg)](https://youtu.be/XTGzrL2DKx4)
+
+> ▶ **[Watch on YouTube](https://youtu.be/XTGzrL2DKx4)**
+
+---
+
 ## Contents
+
+- [Demo](#-demo)
 
 - [What you can do](#what-you-can-do)
 - [Tech stack](#tech-stack)
