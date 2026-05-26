@@ -8,7 +8,7 @@ A local-first **AI Agent Orchestration Platform** built for the Yuno AI Engineer
 
 ## Contents
 
-- [First demo in 90 seconds](#first-demo-in-90-seconds)
+- [Initial description](#initial-description)
 - [What you can do](#what-you-can-do)
 - [Tech stack](#tech-stack)
 - [Architecture at a glance](#architecture-at-a-glance)
@@ -28,7 +28,7 @@ A local-first **AI Agent Orchestration Platform** built for the Yuno AI Engineer
 
 ---
 
-## First demo in 90 seconds
+## Initial Description
 
 For a hurried reviewer. Detailed setup, env table and troubleshooting live in later sections — refer back if anything snags.
 
