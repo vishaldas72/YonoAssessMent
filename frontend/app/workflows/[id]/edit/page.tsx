@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   Bot,
@@ -30,9 +30,10 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 
+import { AgentSelect } from "@/components/ui/agent-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Label, Select, Textarea } from "@/components/ui/input";
+import { Label, Textarea } from "@/components/ui/input";
 import { Agent, Workflow, api, workflowsApi } from "@/lib/api";
 
 type NodeData = {
@@ -233,12 +234,6 @@ function Editor() {
     }
   }
 
-  const agentsById = useMemo(() => {
-    const m: Record<string, Agent> = {};
-    for (const a of agents) m[a.id] = a;
-    return m;
-  }, [agents]);
-
   return (
     <div className="flex h-screen w-screen">
       <aside className="w-80 shrink-0 border-r border-border bg-bg-subtle flex flex-col">
@@ -317,23 +312,11 @@ function Editor() {
                 {selected.type === "agent" && (
                   <div>
                     <Label>Bind agent</Label>
-                    <Select
+                    <AgentSelect
+                      agents={agents}
                       value={(selected.data.agent_id as string) || ""}
-                      onChange={(e) => bindAgent(e.target.value)}
-                    >
-                      <option value="">— select —</option>
-                      {agents.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {a.name}
-                        </option>
-                      ))}
-                    </Select>
-                    {selected.data.agent_id &&
-                      agentsById[selected.data.agent_id as string] && (
-                        <div className="text-xs text-fg-subtle mt-2 font-mono">
-                          {agentsById[selected.data.agent_id as string].model}
-                        </div>
-                      )}
+                      onChange={(agentId) => bindAgent(agentId)}
+                    />
                   </div>
                 )}
 
