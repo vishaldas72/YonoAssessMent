@@ -2,13 +2,13 @@
 
 A local-first **AI Agent Orchestration Platform** built for the Yuno AI Engineer Challenge.
 
-> Create AI agents, configure their personality / tools / channels / limits, wire them into collaborative workflows on a visual canvas, and watch them run on a real LangGraph runtime — with one of them reachable via Telegram.
+> Create AI agents, configure their personality/tools/channels / limits, wire them into collaborative workflows on a visual canvas, and watch them run on a real LangGraph runtime — with one of them reachable via Telegram.
 
 ---
 
 ## 📹 Demo
 
-Two-minute end-to-end walkthrough — agents, workflow execution, live monitoring, and a Telegram conversation.
+five-minute end-to-end walkthrough — agents, workflow execution, live monitoring, and a Telegram conversation.
 
 [![Watch the demo](https://img.youtube.com/vi/XTGzrL2DKx4/maxresdefault.jpg)](https://youtu.be/XTGzrL2DKx4)
 
