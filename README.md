@@ -469,7 +469,7 @@ RUN uv sync --frozen --no-dev --no-install-project
 
 ### Local (host) setup for IDE autocomplete
 
-You only need this if you want VS Code / PyCharm to resolve imports. Otherwise skip — the container has everything.
+You only need this if you want VS Code / PyCharm to resolve imports. Otherwise, skip - the container has everything.
 
 ```bash
 # install uv (one-time)
@@ -584,10 +584,10 @@ To keep the demo budget focused, these were deliberately left for future iterati
 
 **uv lock fails locally with asyncpg compile error** — your local uv picked Python 3.13. Pin to 3.11 to match Docker: `cd backend && echo "3.11" > .python-version && rm -rf .venv && uv sync`.
 
-**Want to wipe and start clean** — `make clean` (stops and deletes the Postgres volume). Note: also deletes all agents, workflows, conversations.
+**Want to wipe and start clean** — `make clean` (stops and deletes the Postgres volume). Note: also deletes all agents, workflows, and conversations.
 
 ---
 
 ## License
 
-This is a hiring challenge submission. Not licensed for redistribution.
+MIT
