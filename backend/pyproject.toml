@@ -1,0 +1,56 @@
+[project]
+name = "yuno-backend"
+version = "0.1.0"
+description = "Yuno AI Agent Orchestration Platform — backend"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.115.0",
+    "uvicorn[standard]==0.30.6",
+    "pydantic==2.9.2",
+    "pydantic-settings==2.5.2",
+    "sqlalchemy[asyncio]==2.0.35",
+    "asyncpg==0.29.0",
+    "redis==5.0.8",
+    "httpx==0.27.2",
+    "python-dotenv==1.0.1",
+    "langgraph==0.2.34",
+    "langchain-core==0.3.9",
+    "langchain-groq==0.2.0",
+    "langchain-anthropic==0.2.3",
+    "langchain-ollama==0.2.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==8.3.3",
+    "pytest-asyncio==0.24.0",
+    "ruff==0.6.9",
+    "mypy==1.11.2",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+check_untyped_defs = true
+ignore_missing_imports = true
+# Third-party libs (langchain, langgraph) have spotty typing; don't blow up on them.
+disallow_untyped_defs = false
+disable_error_code = ["import-untyped"]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+check_untyped_defs = false
