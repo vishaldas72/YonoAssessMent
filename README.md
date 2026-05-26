@@ -17,7 +17,7 @@ A local-first **AI Agent Orchestration Platform** built for the Yuno AI Engineer
 - [Setting up the Telegram bot](#setting-up-the-telegram-bot)
 - [Models we support](#models-we-support)
 - [Built-in tools](#built-in-tools)
-- [Why LangGraph](#why-langgraph)
+- [Why these choices](#why-these-choices)
 - [Local development with uv](#local-development-with-uv)
 - [How requirements map to code](#how-requirements-map-to-code)
 - [Tests, lint and types](#tests-lint-and-types)
@@ -363,11 +363,13 @@ Adding a tool is one function — see [`docs/ADDING_A_TOOL.md`](docs/ADDING_A_TO
 
 ---
 
-## Why LangGraph
+## Why these choices
 
-The challenge spec allowed openclaw.ai, LangGraph, CrewAI, AutoGen, or a custom runtime.
+Every meaningful tradeoff in the stack, explained. The table at the top is the summary; this is the reasoning.
 
-We chose **LangGraph** because:
+### Agent runtime — LangGraph
+
+The challenge spec allowed openclaw.ai, LangGraph, CrewAI, AutoGen, or a custom runtime. We chose **LangGraph** because:
 
 1. **The visual workflow builder maps cleanly to its model.** React Flow gives us a node-edge graph; LangGraph compiles a typed `StateGraph` from the same shape. No impedance mismatch.
 2. **It handles the bits we don't want to reinvent.** Tool-calling loop (ReAct), checkpointing, conditional edges, async streaming events — all in the box.
@@ -375,6 +377,59 @@ We chose **LangGraph** because:
 4. **Per-agent runtime + linear workflow orchestrator on top.** The single-agent runtime is a plain LangGraph `create_react_agent`. The workflow runner is a thin Python topological walker that reuses that single-agent runtime per node. Clear separation, easy to test.
 
 We considered **CrewAI** (good for role-based collab but harder to map to a free-form graph) and **building a custom runtime** (rejected — would burn the 40% demo budget on plumbing). AutoGen is great for chat-style multi-agent but its execution model is less graph-shaped.
+
+### LLM provider — Groq by default, with Anthropic and Ollama supported
+
+The default is **Groq** because:
+
+1. **Genuinely free tier** — no credit card, a key takes 30 seconds. Anyone can clone this repo and run the demo without paying anything.
+2. **Llama 3.3 70B is good enough for the demo.** Tool-call reliability is solid; it follows system prompts well; outputs are coherent.
+3. **Very fast.** Groq's LPU inference returns 70B-parameter outputs in 1–3 seconds, which keeps the live monitor demo snappy.
+
+We also wire **Anthropic** (best capability if budget is no object — Sonnet for balance, Opus for the hardest tasks) and **Ollama** (fully local, zero-API-key — for users who must run air-gapped). Switching is a single env var: `LLM_PROVIDER=groq | anthropic | ollama`. The `get_llm()` factory in `backend/app/runtime/llm.py` returns a `BaseChatModel` regardless of provider, so the rest of the code is provider-agnostic.
+
+### Message bus — Redis
+
+We use Redis for two narrow things: **pub/sub for live runtime events** and **WebSocket fan-out**. Why a bus at all, and why Redis specifically?
+
+- **Why not just in-process events?** WebSocket clients need to receive events emitted by background async tasks. With a single process today that would work via `asyncio.Queue`, but the moment we scale to multiple uvicorn workers the in-process pattern breaks — clients connected to worker A don't see events from worker B. The Redis pattern works at any worker count.
+- **Why not Postgres LISTEN/NOTIFY?** Postgres can do pub/sub, but it requires a dedicated long-lived connection per subscriber and the notify payload is capped at 8 KB. Redis is purpose-built for this; the API is simpler.
+- **Why not Kafka?** Kafka is the right answer when you need durable event logs, replayability across days, or millions of events/sec. We need none of that — events are also persisted to `run_events` and `workflow_run_events` tables, so durability is already covered. Kafka would add 3 extra containers and a heavy operational footprint for zero demo benefit.
+- **Why not RabbitMQ?** Same family as Redis for our use case but with a heavier protocol (AMQP). Redis is one container with one library; RabbitMQ is two containers with management UIs and exchange/queue setup.
+
+All Redis usage is hidden behind `backend/app/services/bus.py` — if we ever need to swap to Kafka or a managed service, it's a one-file change.
+
+### Database — Postgres with JSONB
+
+**Why a relational DB at all?** Agents, workflows, runs, conversations and messages are all relational by nature — foreign keys actually mean something. A document store would force us to denormalize and lose referential integrity.
+
+**Why Postgres specifically over MySQL/SQLite?**
+
+- **JSONB columns.** Agent tool lists, channel bindings, memory configs, workflow graphs — all are variable-shape JSON. Postgres `JSONB` lets us store and **index** them natively without inventing a side-table or stringifying. MySQL JSON is comparable but Postgres's operator set is richer.
+- **`@>` containment queries.** We use this for the Telegram worker to find agents bound to a channel: `WHERE channels @> '["telegram"]'`. Trivial in Postgres, awkward in MySQL.
+- **asyncpg.** Best-in-class async driver, fully typed, much faster than sync drivers on connection pools.
+- **SQLite was tempting** for simplicity but doesn't support JSONB containment, async drivers are immature, and we want one consistent stack from dev to prod.
+
+### Backend framework — FastAPI
+
+- **Async-first.** The whole runtime is async — agent runs, workflow tasks, Telegram long-polling, WebSocket streaming. Django/Flask both bolt async on top of WSGI; FastAPI is async-native end to end.
+- **OpenAPI for free.** Visit `localhost:8000/docs` to see every endpoint documented automatically from the Pydantic schemas. No swagger generator step, no maintenance.
+- **WebSocket support is built in.** Live monitor uses it; the worker pattern would have been clunkier in Django or Flask.
+- **Pydantic v2 schemas** double as validation + serialization + OpenAPI definition. One source of truth per endpoint.
+
+### Frontend — Next.js 14 + React Flow + Tailwind
+
+- **Next.js (App Router)** because it gives us server components for fast shell loads, client components for the interactive bits (WebSocket-driven monitor, workflow editor), and routing/dev-server/build-tool in one package.
+- **React Flow** because its node/edge data shape is *the same* shape we persist in `workflows.graph`. The editor saves the React Flow state verbatim to the backend; the backend feeds it back on reload. No translation layer.
+- **Tailwind + a tiny primitive layer** because we needed a polished UI fast. Hand-rolling CSS would have meant more files for less consistency; a heavyweight design system (MUI, Chakra) would have been overkill. The whole frontend ships with ~10 primitive components in `components/ui/` and the rest is composition.
+
+### Python tooling — uv
+
+Faster than pip, has a lockfile, manages Python versions itself, runs scripts inside venvs. Full reasoning in [Local development with uv](#local-development-with-uv).
+
+### Container runtime — Docker Compose
+
+The challenge requires "fully local with a single setup command." Compose v2 ships with Docker Desktop; it brings up four services with one command and keeps them isolated from the host. Anyone on any OS can run `make up` and get an identical stack — no "works on my machine" risk.
 
 ---
 
